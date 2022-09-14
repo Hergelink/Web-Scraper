@@ -1,6 +1,6 @@
 # ⛏️ Web-Scraper ⛏️
 
-What is it?
+🤔 What is it?
 
 - A prototype simple web scraper with sms notifications when the selected items price decreases below a desired price.
 
