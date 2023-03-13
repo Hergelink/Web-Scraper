@@ -1,21 +1,27 @@
+require('dotenv').config();
+
 //Packages
 const axios = require('axios');
 const cheerio = require('cheerio');
 
-require('dotenv').config();
 // account SID and authToken info stored in env file
-const accountSid = process.env.TWILIO_ACCOUNT_SID;
-const authToken = process.env.TWILIO_AUTH_TOKEN;
-const client = require('twilio')(accountSid, authToken);
+// const accountSid = process.env.TWILIO_ACCOUNT_SID;
+// const authToken = process.env.TWILIO_AUTH_TOKEN;
+// const client = require('twilio')(accountSid, authToken);
+
+const sgMail = require('@sendgrid/mail');
+const client = sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
 //url to scrape
 const url =
-  'https://www.amazon.com.tr/Apple-10-%C3%A7ekirdekli-16-%C3%A7ekirdekli-GPUya-sahip-Apple-M1/dp/B09JQZ2QM7/ref=sr_1_4_sspa?__mk_tr_TR=%C3%85M%C3%85%C5%BD%C3%95%C3%91&crid=25N03ESUXTMKD&keywords=macbook&qid=1663075531&sprefix=macbook%2Caps%2C129&sr=8-4-spons&psc=1&spLa=ZW5jcnlwdGVkUXVhbGlmaWVyPUFSVVY2UkpISTQzNFUmZW5jcnlwdGVkSWQ9QTAxMzEwMDlOWVhDOVlUQ0o1Q0ImZW5jcnlwdGVkQWRJZD1BMDIzMDUzMTFKNFJCM0lCU1g2OUEmd2lkZ2V0TmFtZT1zcF9hdGYmYWN0aW9uPWNsaWNrUmVkaXJlY3QmZG9Ob3RMb2dDbGljaz10cnVl';
+  'https://www.trendyol.com/tchibo/cafissimo-caffe-crema-rich-aroma-96-adet-kapsul-kahve-p-821481';
 
 const product = { name: '', price: '', link: '' };
 
 //Set interval // for every 10 second
-const handle = setInterval(scrape, 10000);
+const handle = setInterval(scrape, 100000);
+//Set interval // for every 12 hour
+// const handle = setInterval(scrape, 43200000);
 
 async function scrape() {
   //Fetch the data
@@ -25,35 +31,41 @@ async function scrape() {
   const $ = cheerio.load(data);
 
   //The container holding all the elements inside that we need!
-  const item = $('div#dp-container');
+  const item = $('div.pr-in-cn');
 
   //Extract the data that we need
-  product.name = $(item).find('h1 span#productTitle').text();
+  product.name = $(item).find('div h1.pr-new-br').text();
   product.link = url;
+
   const price = $(item)
-    .find('span span.a-price-whole')
+    .find('div span.prc-dsc')
     .first()
     .text()
-    .replace(/[.,]/g, '');
+    .replace(/[,]/g, '.');
 
   //Converting the string value of price to an integer
   const priceNum = parseInt(price);
   product.price = priceNum;
 
   console.log(product);
-  
+
+  const priceTreshold = 500;
   //Send an SMS
-  if (priceNum < 50000) {
-    client.messages
-      .create({
-        body: `The price of ${product.name} went below ${price}. Purchase it at ${product.link}`,
-        //from is for the senders & to is the reciever phone number
-        from: '',
-        to: '',
+  if (priceNum < priceTreshold) {
+    const msg = {
+      to: 'enver.hergelink@gmail.com',
+      from: 'enver.hergelink@gmail.com',
+      subject: `Price Decrease of ${product.name}`,
+      text: `The price of ${product.name} decreased below ${priceTreshold}`,
+    };
+
+    client
+      .send(msg)
+      .then(() => {
+        console.log('Email Sent');
       })
-      .then((message) => {
-        console.log(message);
-        clearInterval(handle);
+      .catch((error) => {
+        console.log(error);
       });
   }
 }
