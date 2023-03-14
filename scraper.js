@@ -43,7 +43,7 @@ async function scrape() {
   const priceNum = parseInt(price);
   product.price = priceNum;
 
-  const priceTreshold = 500;
+  const priceTreshold = 420;
 
   //Send an email
   if (priceNum < priceTreshold) {
