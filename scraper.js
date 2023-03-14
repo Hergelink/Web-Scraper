@@ -51,8 +51,8 @@ async function scrape() {
 
     mg.messages
       .create('sandbox322835d33b78427c87e79c9db5cd34b9.mailgun.org', {
-        from: 'enver.hergelink@gmail.com',
-        to: 'enver.hergelink@gmail.com',
+        from: process.env.EMAIL,
+        to: process.env.EMAIL,
         subject: `Price Decrease of ${product.name}`,
         text: `The price of ${product.name} decreased below ${priceTreshold}. Product link = ${url}`,
       })
