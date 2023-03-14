@@ -4,24 +4,21 @@ require('dotenv').config();
 const axios = require('axios');
 const cheerio = require('cheerio');
 
-// account SID and authToken info stored in env file
-// const accountSid = process.env.TWILIO_ACCOUNT_SID;
-// const authToken = process.env.TWILIO_AUTH_TOKEN;
-// const client = require('twilio')(accountSid, authToken);
-
-const sgMail = require('@sendgrid/mail');
-const client = sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+const formData = require('form-data');
+const Mailgun = require('mailgun.js');
+const mailgun = new Mailgun(formData);
+const mg = mailgun.client({
+  username: 'api',
+  key: process.env.MAILGUN_KEY,
+});
 
 //url to scrape
-const url =
-  'https://www.trendyol.com/tchibo/cafissimo-caffe-crema-rich-aroma-96-adet-kapsul-kahve-p-821481';
+const url = process.env.TARGET_URL;
 
 const product = { name: '', price: '', link: '' };
 
-//Set interval // for every 10 second
-const handle = setInterval(scrape, 100000);
 //Set interval // for every 12 hour
-// const handle = setInterval(scrape, 43200000);
+const handle = setInterval(scrape, 43200000);
 
 async function scrape() {
   //Fetch the data
@@ -30,10 +27,10 @@ async function scrape() {
   //Load up the HTML with cheerio
   const $ = cheerio.load(data);
 
-  //The container holding all the elements inside that we need!
+  //The container holding all the elements
   const item = $('div.pr-in-cn');
 
-  //Extract the data that we need
+  //Extract the data
   product.name = $(item).find('div h1.pr-new-br').text();
   product.link = url;
 
@@ -43,30 +40,24 @@ async function scrape() {
     .text()
     .replace(/[,]/g, '.');
 
-  //Converting the string value of price to an integer
   const priceNum = parseInt(price);
   product.price = priceNum;
 
-  console.log(product);
-
   const priceTreshold = 500;
-  //Send an SMS
-  if (priceNum < priceTreshold) {
-    const msg = {
-      to: 'enver.hergelink@gmail.com',
-      from: 'enver.hergelink@gmail.com',
-      subject: `Price Decrease of ${product.name}`,
-      text: `The price of ${product.name} decreased below ${priceTreshold}`,
-    };
 
-    client
-      .send(msg)
-      .then(() => {
-        console.log('Email Sent');
+  //Send an email
+  if (priceNum < priceTreshold) {
+    console.log(product);
+
+    mg.messages
+      .create('sandbox322835d33b78427c87e79c9db5cd34b9.mailgun.org', {
+        from: 'enver.hergelink@gmail.com',
+        to: 'enver.hergelink@gmail.com',
+        subject: `Price Decrease of ${product.name}`,
+        text: `The price of ${product.name} decreased below ${priceTreshold}. Product link = ${url}`,
       })
-      .catch((error) => {
-        console.log(error);
-      });
+      .then((msg) => console.log(msg))
+      .catch((err) => console.log(err));
   }
 }
 
